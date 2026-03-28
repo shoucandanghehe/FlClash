@@ -4,11 +4,11 @@ package zerotier
 
 /*
 #cgo android,arm64 CFLAGS: -I${SRCDIR}/libzt/include
-#cgo android,arm64 LDFLAGS: -L${SRCDIR}/libzt/lib/arm64-v8a -lzt -lstdc++ -lm
+#cgo android,arm64 LDFLAGS: -L${SRCDIR}/libzt/lib/arm64-v8a -lzt -lstdc++ -lm -Wl,--allow-multiple-definition
 #cgo android,arm CFLAGS: -I${SRCDIR}/libzt/include
-#cgo android,arm LDFLAGS: -L${SRCDIR}/libzt/lib/armeabi-v7a -lzt -lstdc++ -lm
+#cgo android,arm LDFLAGS: -L${SRCDIR}/libzt/lib/armeabi-v7a -lzt -lstdc++ -lm -Wl,--allow-multiple-definition
 #cgo android,amd64 CFLAGS: -I${SRCDIR}/libzt/include
-#cgo android,amd64 LDFLAGS: -L${SRCDIR}/libzt/lib/x86_64 -lzt -lstdc++ -lm
+#cgo android,amd64 LDFLAGS: -L${SRCDIR}/libzt/lib/x86_64 -lzt -lstdc++ -lm -Wl,--allow-multiple-definition
 
 #include <stdlib.h>
 #include <string.h>
