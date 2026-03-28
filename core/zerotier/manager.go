@@ -12,7 +12,7 @@ import (
 	"github.com/metacubex/mihomo/adapter"
 	RC "github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/log"
-	"github.com/metacubex/mihomo/rules"
+	"github.com/metacubex/mihomo/rules/common"
 	"github.com/metacubex/mihomo/tunnel"
 )
 
@@ -161,7 +161,7 @@ func (m *Manager) InjectRules() {
 	// Create rules
 	var newRules []RC.Rule
 	for _, prefix := range prefixSet {
-		rule, err := rules.NewIPCIDR(prefix.String(), AdapterName, rules.WithIPCIDRNoResolve(true))
+		rule, err := common.NewIPCIDR(prefix.String(), AdapterName, common.WithIPCIDRNoResolve(true))
 		if err != nil {
 			log.Warnln("[ZeroTier] Failed to create rule for %s: %v", prefix.String(), err)
 			continue

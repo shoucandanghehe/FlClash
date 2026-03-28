@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/metacubex/mihomo/adapter/outbound"
-	"github.com/metacubex/mihomo/component/dialer"
 	"github.com/metacubex/mihomo/constant"
 )
 
@@ -24,16 +23,16 @@ type ZeroTierAdapter struct {
 func NewAdapter(node *Node) *ZeroTierAdapter {
 	return &ZeroTierAdapter{
 		Base: outbound.NewBase(outbound.BaseOption{
-			Name:   AdapterName,
-			Type:   constant.Direct, // Use Direct type as base
-			UDP:    true,
+			Name: AdapterName,
+			Type: constant.Direct, // Use Direct type as base
+			UDP:  false,           // UDP not supported via libzt BSD sockets for now
 		}),
 		node: node,
 	}
 }
 
 // DialContext connects to the target through the ZeroTier network
-func (z *ZeroTierAdapter) DialContext(ctx context.Context, metadata *constant.Metadata, opts ...dialer.Option) (constant.Conn, error) {
+func (z *ZeroTierAdapter) DialContext(ctx context.Context, metadata *constant.Metadata) (constant.Conn, error) {
 	address := metadata.RemoteAddress()
 	if address == "" {
 		return nil, fmt.Errorf("empty remote address")
@@ -47,21 +46,9 @@ func (z *ZeroTierAdapter) DialContext(ctx context.Context, metadata *constant.Me
 	return outbound.NewConn(conn, z), nil
 }
 
-// ListenPacketContext creates a UDP connection through the ZeroTier network
-func (z *ZeroTierAdapter) ListenPacketContext(ctx context.Context, metadata *constant.Metadata, opts ...dialer.Option) (constant.PacketConn, error) {
-	address := metadata.UDPAddr().String()
-
-	pc, err := z.node.DialUDP(ctx, address)
-	if err != nil {
-		return nil, fmt.Errorf("zerotier UDP %s: %w", address, err)
-	}
-
-	return outbound.NewPacketConn(pc, z), nil
-}
-
-// SupportUDP returns true as ZeroTier supports UDP
+// SupportUDP returns false - UDP via libzt BSD sockets is not yet supported
 func (z *ZeroTierAdapter) SupportUDP() bool {
-	return true
+	return false
 }
 
 // MarshalJSON implements json.Marshaler

@@ -99,10 +99,10 @@ func (c *ztPacketConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	if len(b) == 0 {
 		return 0, nil, nil
 	}
-	var sa C.struct_sockaddr_in
-	salen := C.socklen_t(unsafe.Sizeof(sa))
+	var sa C.struct_zts_sockaddr_in
+	salen := C.zts_socklen_t(unsafe.Sizeof(sa))
 	n := C.zts_bsd_recvfrom(c.fd, unsafe.Pointer(&b[0]), C.size_t(len(b)), 0,
-		(*C.struct_sockaddr)(unsafe.Pointer(&sa)), &salen)
+		(*C.struct_zts_sockaddr)(unsafe.Pointer(&sa)), &salen)
 	if n < 0 {
 		return 0, nil, fmt.Errorf("zts_bsd_recvfrom failed: %d", n)
 	}
@@ -121,7 +121,7 @@ func (c *ztPacketConn) WriteTo(b []byte, addr net.Addr) (int, error) {
 		return 0, fmt.Errorf("invalid addr type")
 	}
 
-	var sa C.struct_sockaddr_in
+	var sa C.struct_zts_sockaddr_in
 	sa.sin_family = C.ZTS_AF_INET
 	sa.sin_port = C.htons(C.uint16_t(udpAddr.Port))
 	ip4 := udpAddr.IP.To4()
@@ -133,7 +133,7 @@ func (c *ztPacketConn) WriteTo(b []byte, addr net.Addr) (int, error) {
 		return 0, nil
 	}
 	n := C.zts_bsd_sendto(c.fd, unsafe.Pointer(&b[0]), C.size_t(len(b)), 0,
-		(*C.struct_sockaddr)(unsafe.Pointer(&sa)), C.socklen_t(unsafe.Sizeof(sa)))
+		(*C.struct_zts_sockaddr)(unsafe.Pointer(&sa)), C.zts_socklen_t(unsafe.Sizeof(sa)))
 	if n < 0 {
 		return 0, fmt.Errorf("zts_bsd_sendto failed: %d", n)
 	}
@@ -166,7 +166,7 @@ func (c *ztPacketConn) SetWriteDeadline(t time.Time) error {
 // setSocketTimeout sets SO_RCVTIMEO or SO_SNDTIMEO on a libzt socket.
 // A zero time.Time clears the timeout.
 func setSocketTimeout(fd C.int, optname C.int, t time.Time) error {
-	var tv C.struct_timeval
+	var tv C.struct_zts_timeval
 	if !t.IsZero() {
 		d := time.Until(t)
 		if d < 0 {
@@ -178,7 +178,7 @@ func setSocketTimeout(fd C.int, optname C.int, t time.Time) error {
 		tv.tv_usec = C.long(usec)
 	}
 	ret := C.zts_bsd_setsockopt(fd, C.ZTS_SOL_SOCKET, optname,
-		unsafe.Pointer(&tv), C.socklen_t(unsafe.Sizeof(tv)))
+		unsafe.Pointer(&tv), C.zts_socklen_t(unsafe.Sizeof(tv)))
 	if ret < 0 {
 		return fmt.Errorf("setsockopt timeout failed: %d", ret)
 	}

@@ -200,9 +200,9 @@ func (n *Node) updateAddresses() {
 	n.assignedIPs = nil
 
 	// Get IPv4 address
-	var addr4 C.struct_sockaddr_storage
-	if C.zts_addr_get(C.uint64_t(n.networkID), C.ZTS_AF_INET, (*C.struct_sockaddr_storage)(unsafe.Pointer(&addr4))) == C.ZTS_ERR_OK {
-		sa4 := (*C.struct_sockaddr_in)(unsafe.Pointer(&addr4))
+	var addr4 C.struct_zts_sockaddr_storage
+	if C.zts_addr_get(C.uint64_t(n.networkID), C.ZTS_AF_INET, (*C.struct_zts_sockaddr_storage)(unsafe.Pointer(&addr4))) == C.ZTS_ERR_OK {
+		sa4 := (*C.struct_zts_sockaddr_in)(unsafe.Pointer(&addr4))
 		ip := netip.AddrFrom4(*(*[4]byte)(unsafe.Pointer(&sa4.sin_addr)))
 		// Default to /24 subnet for ZeroTier managed routes
 		prefix := netip.PrefixFrom(ip, 24)
@@ -210,9 +210,9 @@ func (n *Node) updateAddresses() {
 	}
 
 	// Get IPv6 address
-	var addr6 C.struct_sockaddr_storage
-	if C.zts_addr_get(C.uint64_t(n.networkID), C.ZTS_AF_INET6, (*C.struct_sockaddr_storage)(unsafe.Pointer(&addr6))) == C.ZTS_ERR_OK {
-		sa6 := (*C.struct_sockaddr_in6)(unsafe.Pointer(&addr6))
+	var addr6 C.struct_zts_sockaddr_storage
+	if C.zts_addr_get(C.uint64_t(n.networkID), C.ZTS_AF_INET6, (*C.struct_zts_sockaddr_storage)(unsafe.Pointer(&addr6))) == C.ZTS_ERR_OK {
+		sa6 := (*C.struct_zts_sockaddr_in6)(unsafe.Pointer(&addr6))
 		ip := netip.AddrFrom16(*(*[16]byte)(unsafe.Pointer(&sa6.sin6_addr)))
 		prefix := netip.PrefixFrom(ip, 64)
 		n.assignedIPs = append(n.assignedIPs, prefix)
@@ -298,7 +298,7 @@ func (n *Node) DialTCP(ctx context.Context, address string) (net.Conn, error) {
 	}
 
 	// Build sockaddr_in
-	var sa C.struct_sockaddr_in
+	var sa C.struct_zts_sockaddr_in
 	sa.sin_family = C.ZTS_AF_INET
 	sa.sin_port = C.htons(C.uint16_t(port))
 
@@ -313,7 +313,7 @@ func (n *Node) DialTCP(ctx context.Context, address string) (net.Conn, error) {
 	}
 	ch := make(chan connectResult, 1)
 	go func() {
-		ret := C.zts_bsd_connect(fd, (*C.struct_sockaddr)(unsafe.Pointer(&sa)), C.socklen_t(unsafe.Sizeof(sa)))
+		ret := C.zts_bsd_connect(fd, (*C.struct_zts_sockaddr)(unsafe.Pointer(&sa)), C.zts_socklen_t(unsafe.Sizeof(sa)))
 		if ret < 0 {
 			ch <- connectResult{err: fmt.Errorf("zts_bsd_connect failed: %d", ret)}
 		} else {
