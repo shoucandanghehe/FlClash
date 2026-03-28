@@ -3,6 +3,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"core/zerotier"
 	"encoding/json"
 	"github.com/metacubex/mihomo/adapter"
 	"github.com/metacubex/mihomo/adapter/outboundgroup"
@@ -80,6 +81,7 @@ func handleForceGC() {
 }
 
 func handleShutdown() bool {
+	zerotier.DefaultManager.Stop()
 	stopListeners()
 	executor.Shutdown()
 	handleForceGC()
@@ -549,7 +551,49 @@ func handleSetupConfig(bytes []byte) string {
 	return ""
 }
 
+func handleZtStart(configJson string, fn func(string)) {
+	go func() {
+		var cfg zerotier.ZeroTierConfig
+		err := json.Unmarshal([]byte(configJson), &cfg)
+		if err != nil {
+			fn(err.Error())
+			return
+		}
+		err = zerotier.DefaultManager.Start(cfg, constant.Path.HomeDir())
+		if err != nil {
+			fn(err.Error())
+			return
+		}
+		zerotier.DefaultManager.InjectAdapter()
+		zerotier.DefaultManager.InjectRules()
+		fn("")
+	}()
+}
+
+func handleZtStop(fn func(string)) {
+	go func() {
+		err := zerotier.DefaultManager.Stop()
+		if err != nil {
+			fn(err.Error())
+			return
+		}
+		fn("")
+	}()
+}
+
+func handleZtGetStatus() string {
+	return zerotier.DefaultManager.GetStatusJSON()
+}
+
 func init() {
+	// Wire ZeroTier send message function to the core event system
+	zerotier.SendMessageFunc = func(msgType string, data interface{}) {
+		sendMessage(Message{
+			Type: MessageType(msgType),
+			Data: data,
+		})
+	}
+
 	adapter.UrlTestHook = func(url string, name string, delay uint16) {
 		delayData := &Delay{
 			Url:  url,

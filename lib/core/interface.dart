@@ -73,6 +73,12 @@ mixin CoreInterface {
   FutureOr<bool> closeConnections();
 
   FutureOr<bool> resetConnections();
+
+  Future<String> ztStart(String configJson);
+
+  Future<String> ztStop();
+
+  Future<String> ztGetStatus();
 }
 
 abstract class CoreHandlerInterface with CoreInterface {
@@ -345,5 +351,24 @@ abstract class CoreHandlerInterface with CoreInterface {
   @override
   Future<String> getMemory() async {
     return await _invoke<String>(method: ActionMethod.getMemory) ?? '';
+  }
+
+  @override
+  Future<String> ztStart(String configJson) async {
+    return await _invoke<String>(
+          method: ActionMethod.ztStart,
+          data: configJson,
+        ) ??
+        '';
+  }
+
+  @override
+  Future<String> ztStop() async {
+    return await _invoke<String>(method: ActionMethod.ztStop) ?? '';
+  }
+
+  @override
+  Future<String> ztGetStatus() async {
+    return await _invoke<String>(method: ActionMethod.ztGetStatus) ?? '';
   }
 }

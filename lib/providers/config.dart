@@ -1,5 +1,6 @@
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/models/models.dart';
+import 'package:fl_clash/providers/zerotier.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'generated/config.g.dart';
@@ -110,6 +111,7 @@ Config _config(Ref ref) {
   final hotKeyActions = ref.watch(hotKeyActionsProvider);
   final proxiesStyleProps = ref.watch(proxiesStyleSettingProvider);
   final patchClashConfig = ref.watch(patchClashConfigProvider);
+  final zeroTierConfig = ref.watch(zeroTierSettingProvider);
   return Config(
     appSettingProps: appSettingProps,
     windowProps: windowProps,
@@ -122,6 +124,7 @@ Config _config(Ref ref) {
     hotKeyActions: hotKeyActions,
     proxiesStyleProps: proxiesStyleProps,
     patchClashConfig: patchClashConfig,
+    zeroTierConfig: zeroTierConfig,
   );
 }
 
@@ -143,6 +146,9 @@ List<Override> buildConfigOverrides(Config config) {
     ),
     patchClashConfigProvider.overrideWithBuild(
       (_, _) => config.patchClashConfig,
+    ),
+    zeroTierSettingProvider.overrideWithBuild(
+      (_, _) => config.zeroTierConfig,
     ),
   ];
 }

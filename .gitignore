@@ -65,6 +65,10 @@ CLAUDE.md
 /macos/**/Package.resolved
 devtools_options.yaml
 
+# ZeroTier libzt build artifacts
+/core/zerotier/libzt/lib/
+/core/zerotier/libzt/build/
+
 # FVM Version Cache
 .fvm/
 .fvmrc

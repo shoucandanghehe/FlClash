@@ -271,6 +271,18 @@ class CoreController {
   Future<String> deleteFile(String path) async {
     return await _interface.deleteFile(path);
   }
+
+  Future<String> ztStart(String configJson) async {
+    return await _interface.ztStart(configJson);
+  }
+
+  Future<String> ztStop() async {
+    return await _interface.ztStop();
+  }
+
+  Future<String> ztGetStatus() async {
+    return await _interface.ztGetStatus();
+  }
 }
 
 final coreController = CoreController();

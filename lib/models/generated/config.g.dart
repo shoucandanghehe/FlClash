@@ -340,6 +340,9 @@ _Config _$ConfigFromJson(Map<String, dynamic> json) => _Config(
   patchClashConfig: json['patchClashConfig'] == null
       ? defaultClashConfig
       : ClashConfig.fromJson(json['patchClashConfig'] as Map<String, dynamic>),
+  zeroTierConfig: json['zeroTierConfig'] == null
+      ? const ZeroTierConfig()
+      : ZeroTierConfig.fromJson(json['zeroTierConfig'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ConfigToJson(_Config instance) => <String, dynamic>{
@@ -354,4 +357,5 @@ Map<String, dynamic> _$ConfigToJson(_Config instance) => <String, dynamic>{
   'proxiesStyleProps': instance.proxiesStyleProps,
   'windowProps': instance.windowProps,
   'patchClashConfig': instance.patchClashConfig,
+  'zeroTierConfig': instance.zeroTierConfig,
 };

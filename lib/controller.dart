@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:fl_clash/core/core.dart';
@@ -574,7 +575,14 @@ extension SetupControllerExt on AppController {
           },
         );
       }
+      // Auto-start ZeroTier if previously enabled
+      _autoStartZeroTier();
     } else {
+      // Stop ZeroTier when VPN stops
+      final ztConfig = _ref.read(zeroTierSettingProvider);
+      if (ztConfig.enabled) {
+        appController.ztStop();
+      }
       await globalState.handleStop();
       coreController.resetTraffic();
       _ref.read(trafficsProvider.notifier).clear();
@@ -582,6 +590,19 @@ extension SetupControllerExt on AppController {
       _ref.read(runTimeProvider.notifier).value = null;
       addCheckIp();
     }
+  }
+
+  Future<void> _autoStartZeroTier() async {
+    final config = _ref.read(zeroTierSettingProvider);
+    if (!config.enabled || config.networkId.isEmpty) return;
+    final result = await appController.ztStart(config);
+    if (result.isNotEmpty) {
+      commonPrint.log(
+        'ZeroTier auto-start failed: $result',
+        logLevel: LogLevel.warning,
+      );
+    }
+    await appController.refreshZtStatus();
   }
 
   Future<bool> needSetup() async {
@@ -1053,6 +1074,7 @@ extension BackupControllerExt on AppController {
       _ref.read(overrideDnsProvider.notifier).value = config.overrideDns;
       _ref.read(networkSettingProvider.notifier).value = config.networkProps;
       _ref.read(hotKeyActionsProvider.notifier).value = config.hotKeyActions;
+      _ref.read(zeroTierSettingProvider.notifier).value = config.zeroTierConfig;
       return;
     } finally {
       await restoreDir.safeDelete(recursive: true);
@@ -1196,6 +1218,26 @@ extension CommonControllerExt on AppController {
         onEnd();
       }
     }
+  }
+}
+
+extension ZeroTierControllerExt on AppController {
+  Future<String> ztStart(ZeroTierConfig config) async {
+    return await coreController.ztStart(json.encode(config.toJson()));
+  }
+
+  Future<String> ztStop() async {
+    return await coreController.ztStop();
+  }
+
+  Future<void> refreshZtStatus() async {
+    final statusJson = await coreController.ztGetStatus();
+    if (statusJson.isEmpty) return;
+    try {
+      final data = json.decode(statusJson) as Map<String, dynamic>;
+      final status = ZeroTierStatus.fromJson(data);
+      _ref.read(zeroTierStateProvider.notifier).value = status;
+    } catch (_) {}
   }
 }
 

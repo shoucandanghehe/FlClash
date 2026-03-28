@@ -213,6 +213,10 @@ class Build {
       } else {
         env['CGO_ENABLED'] = '0';
       }
+      if (item.target == Target.android) {
+        await Build.buildLibzt(item);
+      }
+
       final execLines = [
         'go',
         'build',
@@ -262,6 +266,21 @@ class Build {
       }
       await realFile.delete();
     }
+  }
+
+  static Future<void> buildLibzt(BuildItem item) async {
+    final script = join(current, 'scripts', 'build_libzt.sh');
+    final archMap = {
+      'armeabi-v7a': 'arm',
+      'arm64-v8a': 'arm64',
+      'x86_64': 'amd64',
+    };
+    final arch = archMap[item.archName] ?? 'arm64';
+    await exec(
+      [script, arch],
+      name: 'build libzt',
+      environment: Platform.environment,
+    );
   }
 
   static Future<void> buildHelper(Target target, String token) async {

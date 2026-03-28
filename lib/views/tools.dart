@@ -11,6 +11,7 @@ import 'package:fl_clash/views/application_setting.dart';
 import 'package:fl_clash/views/backup_and_restore.dart';
 import 'package:fl_clash/views/config/config.dart';
 import 'package:fl_clash/views/hotkey.dart';
+import 'package:fl_clash/views/zerotier/zerotier.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,6 +75,7 @@ class _ToolViewState extends ConsumerState<ToolsView> {
         if (system.isDesktop) const _HotkeyItem(),
         if (system.isWindows) const _LoopbackItem(),
         if (system.isAndroid) const _AccessItem(),
+        if (system.isAndroid) const _ZeroTierItem(),
         const _ConfigItem(),
         const _AdvancedConfigItem(),
         const _SettingItem(),
@@ -296,6 +298,20 @@ class _InfoItem extends StatelessWidget {
       leading: const Icon(Icons.info),
       title: Text(context.appLocalizations.about),
       delegate: OpenDelegate(widget: const AboutView()),
+    );
+  }
+}
+
+class _ZeroTierItem extends StatelessWidget {
+  const _ZeroTierItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListItem.open(
+      leading: const Icon(Icons.hub_outlined),
+      title: const Text('ZeroTier'),
+      subtitle: const Text('ZeroTier virtual LAN'),
+      delegate: OpenDelegate(widget: const ZeroTierView()),
     );
   }
 }

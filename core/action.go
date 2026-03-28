@@ -185,6 +185,20 @@ func handleAction(action *Action, result ActionResult) {
 		path := action.Data.(string)
 		handleDelFile(path, result)
 		return
+	case ztStartMethod:
+		data := action.Data.(string)
+		handleZtStart(data, func(value string) {
+			result.success(value)
+		})
+		return
+	case ztStopMethod:
+		handleZtStop(func(value string) {
+			result.success(value)
+		})
+		return
+	case ztGetStatusMethod:
+		result.success(handleZtGetStatus())
+		return
 	default:
 		nextHandle(action, result)
 	}

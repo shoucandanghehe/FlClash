@@ -105,6 +105,9 @@ const (
 	setupConfigMethod              Method = "setupConfig"
 	getConfigMethod                Method = "getConfig"
 	deleteFile                     Method = "deleteFile"
+	ztStartMethod                  Method = "ztStart"
+	ztStopMethod                   Method = "ztStop"
+	ztGetStatusMethod              Method = "ztGetStatus"
 )
 
 type Method string
@@ -123,10 +126,11 @@ type Message struct {
 }
 
 const (
-	LogMessage     MessageType = "log"
-	DelayMessage   MessageType = "delay"
-	RequestMessage MessageType = "request"
-	LoadedMessage  MessageType = "loaded"
+	LogMessage            MessageType = "log"
+	DelayMessage          MessageType = "delay"
+	RequestMessage        MessageType = "request"
+	LoadedMessage         MessageType = "loaded"
+	ZeroTierStatusMessage MessageType = "ztStatus"
 )
 
 func (message *Message) Json() (string, error) {

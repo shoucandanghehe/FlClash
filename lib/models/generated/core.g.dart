@@ -297,6 +297,9 @@ const _$ActionMethodEnumMap = {
   ActionMethod.updateDns: 'updateDns',
   ActionMethod.getAndroidVpnOptions: 'getAndroidVpnOptions',
   ActionMethod.getCurrentProfileName: 'getCurrentProfileName',
+  ActionMethod.ztStart: 'ztStart',
+  ActionMethod.ztStop: 'ztStop',
+  ActionMethod.ztGetStatus: 'ztGetStatus',
 };
 
 _ProxiesData _$ProxiesDataFromJson(Map<String, dynamic> json) => _ProxiesData(

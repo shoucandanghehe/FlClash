@@ -11,6 +11,7 @@ import (
 	"context"
 	"core/platform"
 	t "core/tun"
+	"core/zerotier"
 	"encoding/json"
 	"errors"
 	"github.com/metacubex/mihomo/component/dialer"
@@ -28,6 +29,18 @@ import (
 )
 
 var eventListener unsafe.Pointer
+
+func init() {
+	// Wire ZeroTier fd protection to the TUN handler's protect mechanism
+	zerotier.ProtectFdFunc = func(fd int) {
+		tunLock.Lock()
+		th := tunHandler
+		tunLock.Unlock()
+		if th != nil {
+			th.handleProtect(fd)
+		}
+	}
+}
 
 type TunHandler struct {
 	listener *sing_tun.Listener

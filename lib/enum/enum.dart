@@ -253,6 +253,11 @@ enum ActionMethod {
   updateDns,
   getAndroidVpnOptions,
   getCurrentProfileName,
+
+  ///ZeroTier
+  ztStart,
+  ztStop,
+  ztGetStatus,
 }
 
 enum AuthorizeCode { none, success, error }

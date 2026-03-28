@@ -3,6 +3,7 @@ package main
 import (
 	b "bytes"
 	"context"
+	"core/zerotier"
 	"encoding/json"
 	"errors"
 	"github.com/metacubex/mihomo/adapter"
@@ -248,6 +249,11 @@ func applyConfig(params *SetupParams) error {
 	hub.ApplyConfig(currentConfig)
 	patchSelectGroup(params.SelectedMap)
 	updateListeners()
+	// Re-inject ZeroTier adapter and rules after config reload
+	if zerotier.DefaultManager.IsRunning() {
+		zerotier.DefaultManager.InjectAdapter()
+		zerotier.DefaultManager.InjectRules()
+	}
 	return err
 }
 
