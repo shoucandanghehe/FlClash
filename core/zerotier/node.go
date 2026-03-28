@@ -12,6 +12,7 @@ package zerotier
 
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include <ZeroTierSockets.h>
 
 // Forward declaration for fd protection callback

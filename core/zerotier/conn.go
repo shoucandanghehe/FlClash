@@ -5,6 +5,7 @@ package zerotier
 /*
 #include <ZeroTierSockets.h>
 #include <string.h>
+#include <arpa/inet.h>
 */
 import "C"
 
