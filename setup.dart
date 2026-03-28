@@ -269,13 +269,19 @@ class Build {
   }
 
   static Future<void> buildLibzt(BuildItem item) async {
-    final script = join(current, 'scripts', 'build_libzt.sh');
     final archMap = {
       'armeabi-v7a': 'arm',
       'arm64-v8a': 'arm64',
       'x86_64': 'amd64',
     };
-    final arch = archMap[item.archName] ?? 'arm64';
+    final abiName = item.archName;
+    final libPath = join(current, 'core', 'zerotier', 'libzt', 'lib', abiName, 'libzt.a');
+    if (File(libPath).existsSync()) {
+      print('libzt.a already exists for $abiName, skipping build');
+      return;
+    }
+    final script = join(current, 'scripts', 'build_libzt.sh');
+    final arch = archMap[abiName] ?? 'arm64';
     await exec(
       [script, arch],
       name: 'build libzt',

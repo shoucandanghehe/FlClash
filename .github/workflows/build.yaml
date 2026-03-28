@@ -64,6 +64,62 @@ jobs:
           cache-dependency-path: |
             core/go.sum
 
+      - name: Build libzt for Android
+        if: startsWith(matrix.platform, 'android')
+        run: |
+          # Install CMake and Ninja
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build
+
+          # Set ANDROID_NDK from the pre-installed NDK in the runner
+          export ANDROID_NDK=$ANDROID_NDK_HOME
+          if [ -z "$ANDROID_NDK" ]; then
+            export ANDROID_NDK=$ANDROID_NDK_LATEST_HOME
+          fi
+          echo "Using ANDROID_NDK=$ANDROID_NDK"
+
+          # Clone libzt source
+          LIBZT_DIR="core/zerotier/libzt"
+          if [ ! -d "$LIBZT_DIR" ] || [ -z "$(ls -A "$LIBZT_DIR" 2>/dev/null)" ]; then
+            git clone --recurse-submodules --depth 1 https://github.com/zerotier/libzt.git "$LIBZT_DIR"
+          fi
+
+          # Build for each Android architecture
+          for ARCH_ABI in arm64-v8a armeabi-v7a x86_64; do
+            echo "=== Building libzt for $ARCH_ABI ==="
+            BUILD_DIR="$LIBZT_DIR/build/$ARCH_ABI"
+            OUTPUT_DIR="$LIBZT_DIR/lib/$ARCH_ABI"
+            mkdir -p "$BUILD_DIR" "$OUTPUT_DIR"
+
+            cmake -S "$LIBZT_DIR" -B "$BUILD_DIR" \
+              -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI="$ARCH_ABI" \
+              -DANDROID_PLATFORM=android-21 \
+              -DBUILD_SHARED_LIBS=OFF \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DZTS_ENABLE_JAVA=OFF \
+              -DZTS_ENABLE_PYTHON=OFF
+
+            cmake --build "$BUILD_DIR" --config Release -- -j$(nproc)
+
+            # Copy static library
+            LIBZT_A=$(find "$BUILD_DIR" -name "libzt.a" -type f | head -n 1)
+            if [ -z "$LIBZT_A" ]; then
+              echo "Error: libzt.a not found for $ARCH_ABI"
+              find "$BUILD_DIR" -name "*.a" -type f
+              exit 1
+            fi
+            cp "$LIBZT_A" "$OUTPUT_DIR/libzt.a"
+            echo "Copied libzt.a to $OUTPUT_DIR/"
+          done
+
+          # Copy headers
+          INCLUDE_DIR="$LIBZT_DIR/include"
+          mkdir -p "$INCLUDE_DIR"
+          find "$LIBZT_DIR" -maxdepth 4 -name "ZeroTierSockets.h" -exec cp {} "$INCLUDE_DIR/" \;
+          echo "Headers copied to $INCLUDE_DIR/"
+          ls -la "$INCLUDE_DIR/"
+
       - name: Setup Flutter
         if: ${{ !(startsWith(matrix.os, 'windows-11-arm') || startsWith(matrix.os, 'ubuntu-24.04-arm')) }}
         uses: subosito/flutter-action@v2
@@ -108,24 +164,24 @@ jobs:
         if: ${{ env.IS_STABLE == 'true' }}
         run: |
           last_ver=$(grep -m1 '^## ' CHANGELOG.md 2>/dev/null | sed 's/^## //')
-          
+
           tags=($(git tag --merged HEAD --sort=-creatordate))
-          
+
           temp="NEW_CHANGELOG.md" > "$temp"
-          
+
           for i in "${!tags[@]}"; do
               curr="${tags[i]}"
               [[ "$curr" == "$last_ver" ]] && break
-          
+
               prev="${tags[i+1]}"
               range="${prev:+$prev..}$curr"
-          
+
               echo -e "## $curr\n" >> "$temp"
               git log --no-merges --pretty=format:"%B" "$range" | \
               awk '!/Update changelog/ && NF {print "- " $0 "\n"}' >> "$temp"
           done
           [ -f CHANGELOG.md ] && cat CHANGELOG.md >> "$temp"
-          
+
           mv "$temp" CHANGELOG.md
 
       - name: Commit
@@ -153,14 +209,14 @@ jobs:
     permissions: write-all
     needs: [ build ]
     runs-on: ubuntu-latest
-    services:
-      telegram-bot-api:
-        image: aiogram/telegram-bot-api:latest
-        env:
-          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
-          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
-        ports:
-          - 8081:8081
+    # services:
+    #   telegram-bot-api:
+    #     image: aiogram/telegram-bot-api:latest
+    #     env:
+    #       TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+    #       TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+    #     ports:
+    #       - 8081:8081
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -179,30 +235,31 @@ jobs:
           tags=($(git tag --merged HEAD --sort=-creatordate))
           preTag=$(curl -s "https://api.github.com/repos/chen08209/FlClash/releases/latest" | \
           sed -nE 's/.*"tag_name": "([^"]+)".*/\1/p')
-          
+
           [ -z "$preTag" ] && preTag=""
-          
+
           out="release.md" > "$out"
-          
+
           for i in "${!tags[@]}"; do
             curr="${tags[i]}"
             [[ "$curr" == "$preTag" ]] && break
-          
+
             prev="${tags[i+1]}"
             range="${prev:+$prev..}$curr"
-          
+
             git log --no-merges --pretty=format:"%B" "$range" | \
             awk '!/Update changelog/ && NF {print "- " $0 "\n"}' >> "$out"
           done
-      - name: Push to telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TAG: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
-          python release_telegram.py
+
+      # - name: Push to telegram
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TAG: ${{ github.ref_name }}
+      #     RUN_ID: ${{ github.run_id }}
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install requests
+      #     python release_telegram.py
 
       - name: Patch release.md
         run: |
@@ -215,7 +272,7 @@ jobs:
           cd ./dist
           for file in $(find . -type f -not -name "*.sha256"); do
             sha256sum "$file" > "${file}.sha256"
-          done  
+          done
 
       - name: Release
         if: ${{ env.IS_STABLE == 'true' }}
@@ -224,25 +281,24 @@ jobs:
           files: ./dist/*
           body_path: './release.md'
 
-      - name: Create Fdroid Source Dir
-        if: ${{ env.IS_STABLE == 'true' }}
-        run: |
-          mkdir -p ./tmp
-          cp ./dist/*android-arm64-v8a* ./tmp/ || true
-          echo "Files copied successfully"
+      # - name: Create Fdroid Source Dir
+      #   if: ${{ env.IS_STABLE == 'true' }}
+      #   run: |
+      #     mkdir -p ./tmp
+      #     cp ./dist/*android-arm64-v8a* ./tmp/ || true
+      #     echo "Files copied successfully"
 
-      - name: Push to fdroid repo
-        if: ${{ env.IS_STABLE == 'true' }}
-        uses: cpina/github-action-push-to-another-repository@v1.7.2
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-        with:
-          source-directory: ./tmp/
-          destination-github-username: chen08209
-          destination-repository-name: FlClash-fdroid-repo
-          user-name: 'github-actions[bot]'
-          user-email: 'github-actions[bot]@users.noreply.github.com'
-          target-branch: main
-          commit-message: Update from ${{ github.ref_name }}
-          target-directory: /tmp/
-
+      # - name: Push to fdroid repo
+      #   if: ${{ env.IS_STABLE == 'true' }}
+      #   uses: cpina/github-action-push-to-another-repository@v1.7.2
+      #   env:
+      #     SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+      #   with:
+      #     source-directory: ./tmp/
+      #     destination-github-username: chen08209
+      #     destination-repository-name: FlClash-fdroid-repo
+      #     user-name: 'github-actions[bot]'
+      #     user-email: 'github-actions[bot]@users.noreply.github.com'
+      #     target-branch: main
+      #     commit-message: Update from ${{ github.ref_name }}
+      #     target-directory: /tmp/
