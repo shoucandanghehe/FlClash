@@ -102,15 +102,37 @@ jobs:
 
             cmake --build "$BUILD_DIR" --config Release -- -j$(nproc)
 
-            # Copy static library
-            LIBZT_A=$(find "$BUILD_DIR" -name "libzt.a" -type f | head -n 1)
-            if [ -z "$LIBZT_A" ]; then
-              echo "Error: libzt.a not found for $ARCH_ABI"
+            # Copy static libraries - libzt produces libzt_pic.a plus dependencies
+            # We need to merge all static libs into a single libzt.a for CGO linking
+            ALL_LIBS=$(find "$BUILD_DIR/lib" -name "*.a" -type f | sort)
+            if [ -z "$ALL_LIBS" ]; then
+              echo "Error: no .a files found for $ARCH_ABI"
               find "$BUILD_DIR" -name "*.a" -type f
               exit 1
             fi
-            cp "$LIBZT_A" "$OUTPUT_DIR/libzt.a"
-            echo "Copied libzt.a to $OUTPUT_DIR/"
+            echo "Found static libraries:"
+            echo "$ALL_LIBS"
+
+            # Use ar to merge all static libraries into one
+            TOOLCHAIN_PREFIX=""
+            case "$ARCH_ABI" in
+              arm64-v8a) TOOLCHAIN_PREFIX="aarch64-linux-android" ;;
+              armeabi-v7a) TOOLCHAIN_PREFIX="arm-linux-androideabi" ;;
+              x86_64) TOOLCHAIN_PREFIX="x86_64-linux-android" ;;
+            esac
+            AR=$(find "$ANDROID_NDK/toolchains/llvm/prebuilt" -name "llvm-ar" | head -1)
+
+            # Create MRI script to merge all .a files
+            MRI_SCRIPT="$BUILD_DIR/merge.mri"
+            echo "CREATE $OUTPUT_DIR/libzt.a" > "$MRI_SCRIPT"
+            for lib in $ALL_LIBS; do
+              echo "ADDLIB $lib" >> "$MRI_SCRIPT"
+            done
+            echo "SAVE" >> "$MRI_SCRIPT"
+            echo "END" >> "$MRI_SCRIPT"
+
+            $AR -M < "$MRI_SCRIPT"
+            echo "Merged into $OUTPUT_DIR/libzt.a"
           done
 
           # Copy headers
